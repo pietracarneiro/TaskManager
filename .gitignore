@@ -3,3 +3,53 @@
 ################################################################################
 
 /.vs/TaskManager
+/.vs/ProjectEvaluation
+
+# Build results
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+
+# Rider
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# dotnet tools
+**/.tool/
+
+# Database files
+*.mdf
+*.ldf
+*.db
+
+# Secrets
+secrets.json
+
+# Entity Framework
+Migrations/
+
+# Test results
+TestResults/
+*.coverage
+*.coveragejson
+*.trx
+
+# Publish
+publish/

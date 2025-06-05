@@ -1,4 +1,7 @@
-﻿using TaskManager.Models;
+﻿using AutoMapper;
+using TaskManager.DTOs.Requests;
+using TaskManager.DTOs.Responses;
+using TaskManager.Models;
 using TaskManager.Repositories.Interfaces;
 using TaskManager.Services.Interfaces;
 
@@ -7,74 +10,80 @@ namespace TaskManager.Services
     public class TaskItemService : ITaskItemService
     {
         private readonly ITaskItemRepository _taskItemRepository;
+        private readonly IMapper _mapper;
 
-        public TaskItemService(ITaskItemRepository taskItemRepository)
+        public TaskItemService(ITaskItemRepository taskItemRepository, IMapper mapper)
         {
             _taskItemRepository = taskItemRepository;
+            _mapper = mapper;
         }
 
-        public async Task<TaskItem> Create(TaskItem taskItem)
+        public async Task<TaskItemResponse> Create(TaskItemRequest taskItemRequest)
         {
-            if (taskItem == null)
+            if (taskItemRequest == null)
             {
                 throw new ArgumentNullException("TaskItem cannot be null.");
             }
 
-            if (string.IsNullOrWhiteSpace(taskItem.Title))
+            if (string.IsNullOrWhiteSpace(taskItemRequest.Title))
             {
                 throw new ArgumentException("Title cannot be null or empty.");
             }
 
-            if (taskItem.DueDate < DateTime.Now)
+            if (taskItemRequest.DueDate.HasValue && taskItemRequest.DueDate.Value < DateTime.Now)
             {
                 throw new ArgumentException("Due date cannot be in the past.");
             }
 
-            if (string.IsNullOrWhiteSpace(taskItem.Status))
+            if (string.IsNullOrWhiteSpace(taskItemRequest.Status))
             {
-                taskItem.Status = "Pending";
+                taskItemRequest.Status = "Pending";
             }
 
-            taskItem.DueDate = DateTime.Now;
-            return await _taskItemRepository.Create(taskItem);
+            var taskItem = _mapper.Map<TaskItem>(taskItemRequest);
+            taskItem.DueDate = taskItemRequest.DueDate ?? DateTime.Now;
+            taskItem.Status = string.IsNullOrWhiteSpace(taskItemRequest.Status) ? "Pending" : taskItemRequest.Status;
+
+            var createdTaskItem = await _taskItemRepository.Create(taskItem);
+
+            return _mapper.Map<TaskItemResponse>(createdTaskItem);
         }
 
-        public async Task<TaskItem> Delete(int taskId)
+        public async Task<TaskItemResponse> Delete(int taskId)
         {
             if (taskId <= 0)
             {
                 throw new ArgumentException("Task ID must be greater than zero.");
             }
 
-            return await _taskItemRepository.Delete(taskId);
+            var deletedTaskItem = await _taskItemRepository.Delete(taskId);
+            return _mapper.Map<TaskItemResponse>(deletedTaskItem);
         }
 
-        public async Task<List<TaskItem>> GetAll()
+        public async Task<List<TaskItemResponse>> GetAll()
         {
-            return await _taskItemRepository.GetAll();
+            var taskItems = await _taskItemRepository.GetAll();
+            return _mapper.Map<List<TaskItemResponse>>(taskItems);
         }
 
-        public Task<List<TaskItem>> GetAllByDueDate(DateTime date)
+        public async Task<List<TaskItemResponse>> GetAllByDueDate(DateTime date)
         {
-            if (date == null)
+            var taskItems = await _taskItemRepository.GetAllByDueDate(date);
+            return _mapper.Map<List<TaskItemResponse>>(taskItems);
+        }
+
+        public async Task<List<TaskItemResponse>> GetAllByStatus(string status)
+        {
+            if (string.IsNullOrWhiteSpace(status))
             {
-                throw new ArgumentNullException("Due date cannot be null.");
+                throw new ArgumentNullException("Status cannot be null or empty.");
             }
 
-            return _taskItemRepository.GetAllByDueDate(date);
+            var taskItems = await _taskItemRepository.GetAllByStatus(status);
+            return _mapper.Map<List<TaskItemResponse>>(taskItems);
         }
 
-        public Task<List<TaskItem>> GetAllByStatus(string status)
-        {
-            if (status == null)
-            {
-                throw new ArgumentNullException("Status cannot be null.");
-            }
-
-            return _taskItemRepository.GetAllByStatus(status);
-        }
-
-        public async Task<TaskItem> Update(int taskId, TaskItem updatedTaskItem)
+        public async Task<TaskItemResponse> Update(int taskId, TaskItemRequest updatedTaskItem)
         {
             if (updatedTaskItem == null)
             {
@@ -92,8 +101,22 @@ namespace TaskManager.Services
                 throw new ArgumentException("Provide at least one attribute to update the task.");
             }
 
-            return await _taskItemRepository.Update(taskId, updatedTaskItem);
-        }
+            var existingTask = await _taskItemRepository.GetAll();
+            var task = existingTask.FirstOrDefault(t => t.Id == taskId);
+            if (task == null)
+                throw new KeyNotFoundException($"Task with ID {taskId} not found.");
 
+            if (!string.IsNullOrWhiteSpace(updatedTaskItem.Title))
+                task.Title = updatedTaskItem.Title;
+            if (!string.IsNullOrWhiteSpace(updatedTaskItem.Description))
+                task.Description = updatedTaskItem.Description;
+            if (updatedTaskItem.DueDate.HasValue)
+                task.DueDate = updatedTaskItem.DueDate.Value;
+            if (!string.IsNullOrWhiteSpace(updatedTaskItem.Status))
+                task.Status = updatedTaskItem.Status;
+
+            var updatedTask = await _taskItemRepository.Update(taskId, task);
+            return _mapper.Map<TaskItemResponse>(updatedTask);
+        }
     }
 }

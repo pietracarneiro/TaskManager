@@ -1,14 +1,15 @@
-﻿using TaskManager.Models;
+﻿using TaskManager.DTOs.Requests;
+using TaskManager.DTOs.Responses;
 
 namespace TaskManager.Services.Interfaces
 {
     public interface ITaskItemService
     {
-        Task<TaskItem> Create(TaskItem taskItem);
-        Task<TaskItem> Update(int taskId, TaskItem updatedTaskItem);
-        Task<TaskItem> Delete(int taskId);
-        Task<List<TaskItem>> GetAll();
-        Task<List<TaskItem>> GetAllByStatus(string status);
-        Task<List<TaskItem>> GetAllByDueDate(DateTime date);
+        Task<TaskItemResponse> Create(TaskItemRequest taskItem);
+        Task<TaskItemResponse> Update(int taskId, TaskItemRequest updatedTaskItem);
+        Task<TaskItemResponse> Delete(int taskId);
+        Task<List<TaskItemResponse>> GetAll();
+        Task<List<TaskItemResponse>> GetAllByStatus(string status);
+        Task<List<TaskItemResponse>> GetAllByDueDate(DateTime date);
     }
 }

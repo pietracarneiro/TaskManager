@@ -12,6 +12,8 @@ namespace TaskManager.Services
         private readonly ITaskItemRepository _taskItemRepository;
         private readonly IMapper _mapper;
 
+        private static readonly string[] StatusPermitidos = { "Pendente", "Concluido", "Em progresso" };
+
         public TaskItemService(ITaskItemRepository taskItemRepository, IMapper mapper)
         {
             _taskItemRepository = taskItemRepository;
@@ -35,14 +37,13 @@ namespace TaskManager.Services
                 throw new ArgumentException("Due date cannot be in the past.");
             }
 
-            if (string.IsNullOrWhiteSpace(taskItemRequest.Status))
+            if (string.IsNullOrWhiteSpace(taskItemRequest.Status) || !StatusPermitidos.Contains(taskItemRequest.Status))
             {
-                taskItemRequest.Status = "Pending";
+                throw new ArgumentException("Status inválido. Os valores permitidos são: Pendente, Concluido, Em progresso.");
             }
 
             var taskItem = _mapper.Map<TaskItem>(taskItemRequest);
             taskItem.DueDate = taskItemRequest.DueDate ?? DateTime.Now;
-            taskItem.Status = string.IsNullOrWhiteSpace(taskItemRequest.Status) ? "Pending" : taskItemRequest.Status;
 
             var createdTaskItem = await _taskItemRepository.Create(taskItem);
 
